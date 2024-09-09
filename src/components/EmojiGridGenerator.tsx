@@ -24,40 +24,37 @@ export class EmojiNoiseTextureGridGenerator {
     const singleCtx = singleCanvas.getContext("2d")!;
 
     try {
-      singleCtx.font = `${size * 0.8}px Arial`;
-      singleCtx.textAlign = "center";
-      singleCtx.textBaseline = "middle";
-      singleCtx.fillText(emoji, size / 2, size / 2);
+      if (emoji) {
+        singleCtx.font = `${size * 0.8}px Arial`;
+        singleCtx.textAlign = "center";
+        singleCtx.textBaseline = "middle";
+        singleCtx.fillText(emoji, size / 2, size / 2);
+      }
 
       const imageData = singleCtx.getImageData(0, 0, canvasSize, canvasSize);
       const data = imageData.data;
 
-      console.log(`*** dataLen: ${data.length}`);
       for (let i = 0; i < data.length; i += 4) {
-        // data[i] = 0; // R
-        // data[i + 1] = 0; // G
-        // data[i + 2] = 100; // B
-        // data[i + 3] = 255; // A (fully opaque)
-
-        // continue;
-
         if (data[i + 3] > 0) {
-          // on emoji
+          // on emoji path
+          //
           const drawPixel = !invertNoise == Math.random() < noiseDensityOnEmoji;
-
-          // If pixel is not transparent
           if (drawPixel) {
             data[i] = parseInt(noiseColor.slice(1, 3), 16); // R
             data[i + 1] = parseInt(noiseColor.slice(3, 5), 16); // G
             data[i + 2] = parseInt(noiseColor.slice(5, 7), 16); // B
             data[i + 3] = 255; // A (fully opaque)
           } else {
+            // if we don't wipe it out here, then we just get the colored emoji'
             data[i] = 0; // R
             data[i + 1] = 0; // G
             data[i + 2] = 0; // B
             data[i + 3] = 0;
           }
         } else {
+          // didn't hit the emoji path, only do it if no emoji was passed in
+          // (ie the backdrop path)
+          //
           const drawPixel =
             emoji.length == 0 &&
             !invertNoise == Math.random() < noiseDensityOffEmoji;
@@ -67,11 +64,6 @@ export class EmojiNoiseTextureGridGenerator {
             data[i + 1] = parseInt(noiseColor.slice(3, 5), 16); // G
             data[i + 2] = parseInt(noiseColor.slice(5, 7), 16); // B
             data[i + 3] = 255; // A (fully opaque)
-          } else {
-            // data[i] = 0; // R
-            // data[i + 1] = 0; // G
-            // data[i + 2] = 0; // B
-            // data[i + 3] = 255; // A (fully opaque)
           }
         }
       }
@@ -92,7 +84,7 @@ export class EmojiNoiseTextureGridGenerator {
     backgroundColor: string = "#000000",
     maxRotation: number = 15,
     invertNoise: boolean = false,
-    emojiAreaRatio: number = 0.5, // New parameter to control emoji area size
+    emojiAreaRatio: number = 0.5,
     noiseDensityOffEmoji: number = 0.01,
   ): string {
     try {
@@ -194,6 +186,3 @@ export class EmojiNoiseTextureGridGenerator {
     element.style.backgroundSize = "contain";
   }
 }
-
-// Usage example
-// const gridGenerator = new EmojiNoiseTextureGridGenerator(800, 800);

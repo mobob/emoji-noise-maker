@@ -3,18 +3,24 @@ import { EmojiNoiseTextureGridGenerator } from "./EmojiGridGenerator";
 
 export const EmojiGridTest: React.FC = () => {
   const [emoji, setEmoji] = useState("🎉");
-  const [gridSize, setGridSize] = useState(20);
-  const [emojiSize, setEmojiSize] = useState(40);
-  const [noiseDensityOnEmoji, setNoiseDensityOnEmoji] = useState(0.3);
+  const [gridSize, setGridSize] = useState(4);
+  const [emojiSize, setEmojiSize] = useState(200);
+  const [noiseDensityOnEmoji, setNoiseDensityOnEmoji] = useState(0.5);
   const [noiseDensityOffEmoji, setNoiseDensityOffEmoji] = useState(0.1);
-  const [noiseColor, setNoiseColor] = useState("#ffffff");
-  const [backgroundColor, setBackgroundColor] = useState("#000000");
-  const [maxRotation, setMaxRotation] = useState(15);
+  const [noiseColor, setNoiseColor] = useState("#000000");
+  const [backgroundColor, setBackgroundColor] = useState("#ffffff");
+  const [maxRotation, setMaxRotation] = useState(45);
   const [invertNoise, setInvertNoise] = useState(false);
   const [emojiAreaRatio, setEmojiAreaRatio] = useState(0.5);
 
   // only support squares rn
   const [pixelSize, setPixelSize] = useState(800);
+
+  const [testMode, setTestMode] = useState(false);
+  const [backdropOpacity, setBackdropOpacity] = useState(0.075);
+  const [overlayText, setOverlayText] = useState(
+    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+  );
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -100,8 +106,21 @@ export const EmojiGridTest: React.FC = () => {
           style={{
             width: `${pixelSize}px`,
             height: `${pixelSize}px`,
+            opacity: testMode ? backdropOpacity : 1,
           }}
         ></div>
+
+        {testMode && (
+          <div
+            className="absolute inset-0 p-4 overflow-auto"
+            style={{
+              width: `${pixelSize}px`,
+              height: `${pixelSize}px`,
+            }}
+          >
+            <p className="text-black text-4xl text-center">{overlayText}</p>
+          </div>
+        )}
 
         {/* ... (existing input elements) */}
         <button
@@ -149,6 +168,19 @@ export const EmojiGridTest: React.FC = () => {
             value={emojiSize}
             onChange={(e) => setEmojiSize(Number(e.target.value))}
             placeholder="Emoji Size"
+          />
+        </label>
+        <label className="block">
+          <span className="text-gray-700">Emoji Scale:</span>
+          <input
+            className="mt-1 block w-full"
+            type="number"
+            step="0.1"
+            min="0.1"
+            max="1"
+            value={emojiAreaRatio}
+            onChange={(e) => setEmojiAreaRatio(Number(e.target.value))}
+            placeholder="Emoji Area Ratio"
           />
         </label>
         <label className="block">
@@ -212,19 +244,43 @@ export const EmojiGridTest: React.FC = () => {
           />
           <span className="ml-2">Invert Noise</span>
         </label>
-        <label className="block">
-          <span className="text-gray-700">Emoji Area Ratio:</span>
-          <input
-            className="mt-1 block w-full"
-            type="number"
-            step="0.1"
-            min="0.1"
-            max="1"
-            value={emojiAreaRatio}
-            onChange={(e) => setEmojiAreaRatio(Number(e.target.value))}
-            placeholder="Emoji Area Ratio"
-          />
-        </label>
+        <div className="space-y-2">
+          {/* ... (existing inputs) */}
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              className="form-checkbox"
+              checked={testMode}
+              onChange={(e) => setTestMode(e.target.checked)}
+            />
+            <span className="ml-2">Test Mode</span>
+          </label>
+          {testMode && (
+            <>
+              <label className="block">
+                <span className="text-gray-700">Backdrop Opacity:</span>
+                <input
+                  className="mt-1 block w-full"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="1"
+                  value={backdropOpacity}
+                  onChange={(e) => setBackdropOpacity(Number(e.target.value))}
+                />
+              </label>
+              <label className="block">
+                <span className="text-gray-700">Overlay Text:</span>
+                <textarea
+                  className="mt-1 block w-full"
+                  rows={4}
+                  value={overlayText}
+                  onChange={(e) => setOverlayText(e.target.value)}
+                />
+              </label>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
