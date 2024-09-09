@@ -12,46 +12,74 @@ export class EmojiNoiseTextureGridGenerator {
   private generateSingleEmojiTexture(
     emoji: string,
     size: number,
-    noiseDensity: number,
+    noiseDensityOnEmoji: number,
     noiseColor: string,
     invertNoise: boolean,
+    canvasSize: number,
+    noiseDensityOffEmoji: number = 0.01,
   ): HTMLCanvasElement {
     const singleCanvas = document.createElement("canvas");
-    singleCanvas.width = size;
-    singleCanvas.height = size;
+    singleCanvas.width = canvasSize;
+    singleCanvas.height = canvasSize;
     const singleCtx = singleCanvas.getContext("2d")!;
 
-    singleCtx.font = `${size * 0.8}px Arial`;
-    singleCtx.textAlign = "center";
-    singleCtx.textBaseline = "middle";
-    singleCtx.fillText(emoji, size / 2, size / 2);
+    try {
+      singleCtx.font = `${size * 0.8}px Arial`;
+      singleCtx.textAlign = "center";
+      singleCtx.textBaseline = "middle";
+      singleCtx.fillText(emoji, size / 2, size / 2);
 
-    const imageData = singleCtx.getImageData(0, 0, size, size);
-    const data = imageData.data;
+      const imageData = singleCtx.getImageData(0, 0, canvasSize, canvasSize);
+      const data = imageData.data;
 
-    for (let i = 0; i < data.length; i += 4) {
-      const drawPixel = !invertNoise == Math.random() < noiseDensity;
-      if (data[i + 3] > 0) {
-        // If pixel is not transparent
-        if (drawPixel) {
-          data[i] = parseInt(noiseColor.slice(1, 3), 16); // R
-          data[i + 1] = parseInt(noiseColor.slice(3, 5), 16); // G
-          data[i + 2] = parseInt(noiseColor.slice(5, 7), 16); // B
+      console.log(`*** dataLen: ${data.length}`);
+      for (let i = 0; i < data.length; i += 4) {
+        // data[i] = 0; // R
+        // data[i + 1] = 0; // G
+        // data[i + 2] = 100; // B
+        // data[i + 3] = 255; // A (fully opaque)
+
+        // continue;
+
+        if (data[i + 3] > 0) {
+          // on emoji
+          const drawPixel = !invertNoise == Math.random() < noiseDensityOnEmoji;
+
+          // If pixel is not transparent
+          if (drawPixel) {
+            data[i] = parseInt(noiseColor.slice(1, 3), 16); // R
+            data[i + 1] = parseInt(noiseColor.slice(3, 5), 16); // G
+            data[i + 2] = parseInt(noiseColor.slice(5, 7), 16); // B
+            data[i + 3] = 255; // A (fully opaque)
+          } else {
+            data[i] = 0; // R
+            data[i + 1] = 0; // G
+            data[i + 2] = 0; // B
+            data[i + 3] = 0;
+          }
         } else {
-          data[i] = 0; // R
-          data[i + 1] = 0; // G
-          data[i + 2] = 0; // B
-        }
-        data[i + 3] = 255; // A (fully opaque)
-      } else if (drawPixel) {
-        data[i] = parseInt(noiseColor.slice(1, 3), 16); // R
-        data[i + 1] = parseInt(noiseColor.slice(3, 5), 16); // G
-        data[i + 2] = parseInt(noiseColor.slice(5, 7), 16); // B
-        data[i + 3] = 255; // A (fully opaque)
-      }
-    }
+          const drawPixel =
+            emoji.length == 0 &&
+            !invertNoise == Math.random() < noiseDensityOffEmoji;
 
-    singleCtx.putImageData(imageData, 0, 0);
+          if (drawPixel) {
+            data[i] = parseInt(noiseColor.slice(1, 3), 16); // R
+            data[i + 1] = parseInt(noiseColor.slice(3, 5), 16); // G
+            data[i + 2] = parseInt(noiseColor.slice(5, 7), 16); // B
+            data[i + 3] = 255; // A (fully opaque)
+          } else {
+            // data[i] = 0; // R
+            // data[i + 1] = 0; // G
+            // data[i + 2] = 0; // B
+            // data[i + 3] = 255; // A (fully opaque)
+          }
+        }
+      }
+
+      singleCtx.putImageData(imageData, 0, 0);
+    } catch (e) {
+      console.error(e);
+    }
     return singleCanvas;
   }
 
@@ -59,40 +87,77 @@ export class EmojiNoiseTextureGridGenerator {
     emoji: string,
     gridSize: number = 20,
     emojiSize: number = 40,
-    noiseDensity: number = 0.3,
+    noiseDensityOnEmoji: number = 0.3,
     noiseColor: string = "#ffffff",
-    backgroundColor: string = "#808080",
+    backgroundColor: string = "#000000",
     maxRotation: number = 15,
     invertNoise: boolean = false,
+    emojiAreaRatio: number = 0.5, // New parameter to control emoji area size
+    noiseDensityOffEmoji: number = 0.01,
   ): string {
-    // Clear canvas with background color
-    this.ctx.fillStyle = backgroundColor;
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    try {
+      // Clear canvas with background color
+      this.ctx.fillStyle = backgroundColor;
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    const singleEmojiTexture = this.generateSingleEmojiTexture(
-      emoji,
-      emojiSize,
-      noiseDensity,
-      noiseColor,
-      invertNoise,
-    );
+      // Calculate scaled emoji size
+      const scaledEmojiSize = emojiSize * emojiAreaRatio;
 
-    for (let y = 0; y < gridSize; y++) {
-      for (let x = 0; x < gridSize; x++) {
-        const rotation =
-          ((Math.random() - 0.5) * 2 * maxRotation * Math.PI) / 180;
-        const xPos =
-          x * (this.canvas.width / gridSize) + this.canvas.width / gridSize / 2;
-        const yPos =
-          y * (this.canvas.height / gridSize) +
-          this.canvas.height / gridSize / 2;
+      // Calculate cell dimensions
+      const cellWidth = this.canvas.width / gridSize;
+      const cellHeight = this.canvas.height / gridSize;
+      const canvasSize = Math.max(cellWidth, cellHeight);
 
-        this.ctx.save();
-        this.ctx.translate(xPos, yPos);
-        this.ctx.rotate(rotation);
-        this.ctx.drawImage(singleEmojiTexture, -emojiSize / 2, -emojiSize / 2);
-        this.ctx.restore();
+      // generate a big one full backdrop
+      const backdropNoise = this.generateSingleEmojiTexture(
+        "",
+        scaledEmojiSize,
+        noiseDensityOnEmoji,
+        noiseColor,
+        invertNoise,
+        this.canvas.width,
+        noiseDensityOffEmoji,
+      );
+
+      this.ctx.save();
+      this.ctx.translate(0, 0);
+      this.ctx.drawImage(
+        backdropNoise,
+        (Math.random() * -0) / 2,
+        (Math.random() * -0) / 2,
+      );
+      this.ctx.restore();
+
+      const singleEmojiTexture = this.generateSingleEmojiTexture(
+        emoji,
+        scaledEmojiSize,
+        noiseDensityOnEmoji,
+        noiseColor,
+        invertNoise,
+        canvasSize,
+        noiseDensityOffEmoji,
+      );
+
+      for (let y = 0; y < gridSize; y++) {
+        for (let x = 0; x < gridSize; x++) {
+          const rotation =
+            ((Math.random() - 0.5) * 2 * maxRotation * Math.PI) / 180;
+          const xPos = x * cellWidth + cellWidth / 2;
+          const yPos = y * cellHeight + cellHeight / 2;
+
+          this.ctx.save();
+          this.ctx.translate(xPos, yPos);
+          this.ctx.rotate(rotation);
+          this.ctx.drawImage(
+            singleEmojiTexture,
+            (Math.random() * -cellWidth) / 2,
+            (Math.random() * -cellHeight) / 2,
+          );
+          this.ctx.restore();
+        }
       }
+    } catch (e) {
+      console.error(e);
     }
 
     return this.canvas.toDataURL();
@@ -103,24 +168,30 @@ export class EmojiNoiseTextureGridGenerator {
     emoji: string,
     gridSize: number = 20,
     emojiSize: number = 40,
-    noiseDensity: number = 0.3,
+    noiseDensityOnEmoji: number = 0.3,
     noiseColor: string = "#ffffff",
     backgroundColor: string = "#808080",
     maxRotation: number = 15,
     invertNoise: boolean = false,
+    emojiAreaRatio: number = 0.5,
+    noiseDensityOffEmoji: number = 0.01,
   ): void {
     const gridTexture = this.generateGrid(
       emoji,
       gridSize,
       emojiSize,
-      noiseDensity,
+      noiseDensityOnEmoji,
       noiseColor,
       backgroundColor,
       maxRotation,
       invertNoise,
+      emojiAreaRatio,
+      noiseDensityOffEmoji,
     );
     element.style.backgroundImage = `url(${gridTexture})`;
-    element.style.backgroundRepeat = "repeat";
+    element.style.backgroundRepeat = "no-repeat";
+    element.style.backgroundPosition = "center";
+    element.style.backgroundSize = "contain";
   }
 }
 
