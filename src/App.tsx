@@ -47,6 +47,16 @@ function App() {
               Paloma Parties.
             </a>
           </p>
+          <p>
+            Github:{" "}
+            <a
+              href="https://github.com/mobob/emoji-noise-maker/"
+              target="_blank"
+              className="text-blue-500 underline"
+            >
+              https://github.com/mobob/emoji-noise-maker/
+            </a>
+          </p>
         </div>
       </div>
     </div>
