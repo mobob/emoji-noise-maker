@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { EmojiNoiseTextureGridGenerator } from "./EmojiGridGenerator";
 
 // Include the EmojiNoiseTextureGridGenerator class here
